@@ -197,12 +197,13 @@
             </svg>
         </button>
 
-        <h1 class="text-4xl font-extrabold mb-6 text-center">
+        <!-- Removed Header and Paragraph -->
+        <!--h1 class="text-4xl font-extrabold mb-6 text-center">
             ✨ AI Image Prompt Generator
         </h1>
         <p class="text-center mb-8">
             Craft detailed text prompts for AI image generation (e.g., MidJourney, Stable Diffusion, DALL·E).
-        </p>
+        </p-->
 
         <div class="space-y-6">
             <!-- Section 1: Customize Your Image -->
@@ -461,7 +462,12 @@
             try {
                 // Copy the selected text to the clipboard
                 document.execCommand('copy');
-                showMessage("Prompt copied to clipboard!");
+                // Change button text to "Copied!"
+                copyPromptBtn.textContent = "Copied!";
+                // Revert button text after 2 seconds
+                setTimeout(() => {
+                    copyPromptBtn.textContent = "Copy";
+                }, 2000);
             } catch (err) {
                 console.error('Failed to copy text: ', err);
                 showMessage("Failed to copy prompt. Please copy manually.");
