@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Prompt Generator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Default is dark theme */
+            background-color: #1a202c; /* bg-gray-900 */
+            color: #e2e8f0; /* text-gray-200 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensure it takes full viewport height */
+            padding: 1rem; /* Add some padding for smaller screens */
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for theme change */
+        }
+        /* Custom scrollbar for better aesthetics */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #4a5568; /* Darker track for dark theme */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #718096; /* Darker thumb for dark theme */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0; /* Lighter hover for dark theme */
+        }
+
+        /* Light theme scrollbar */
+        body.light-theme textarea::-webkit-scrollbar-track {
+            background: #e0e0e0;
+        }
+        body.light-theme textarea::-webkit-scrollbar-thumb {
+            background: #888;
+        }
+        body.light-theme textarea::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Modal specific styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #2d3748; /* Darker background for modal in dark mode */
+            color: #e2e8f0;
+            margin: auto;
+            padding: 20px;
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .close-button {
+            color: #cbd5e0;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #f7fafc;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Light theme overrides */
+        body.light-theme {
+            background-color: #f3f4f6; /* bg-gray-100 */
+            color: #1f2937; /* text-gray-900 */
+        }
+
+        .app-container { /* Main application container */
+            background-color: #2d3748; /* bg-gray-800 */
+            border-color: #4a5568; /* border-gray-700 */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        body.light-theme .app-container {
+            background-color: #ffffff; /* bg-white */
+            border-color: #e5e7eb; /* border-gray-200 */
+        }
+
+        /* Text colors */
+        body h1, body h2 { color: #e2e8f0; } /* text-gray-200 */
+        body p { color: #a0aec0; } /* text-gray-400 */
+        body label { color: #cbd5e0; } /* text-gray-300 */
+        body .text-gray-500 { color: #a0aec0; } /* For tip text */
+
+        body.light-theme h1, body.light-theme h2 { color: #1f2937; } /* text-gray-900 */
+        body.light-theme p { color: #4b5563; } /* text-gray-700 */
+        body.light-theme label { color: #374151; } /* text-gray-800 */
+        body.light-theme .text-gray-500 { color: #6b7280; } /* For tip text */
+
+
+        /* Select and Textarea elements */
+        select, textarea {
+            background-color: #4a5568 !important; /* bg-gray-700 */
+            color: #e2e8f0 !important; /* text-gray-200 */
+            border-color: #4a5568 !important; /* border-gray-700 */
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        body.light-theme select, body.light-theme textarea {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+            border-color: #d1d5db !important; /* border-gray-300 */
+        }
+        body.light-theme textarea.bg-gray-50 { /* Output textarea specific */
+            background-color: #f9fafb !important;
+        }
+
+        /* Copy button */
+        #copyPromptBtn {
+            background-color: #4a5568; /* bg-gray-700 */
+            color: #e2e8f0; /* text-gray-200 */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        #copyPromptBtn:hover {
+            background-color: #636b77; /* hover:bg-gray-600 */
+        }
+        body.light-theme #copyPromptBtn {
+            background-color: #e5e7eb; /* bg-gray-200 */
+            color: #1f2937; /* text-gray-800 */
+        }
+        body.light-theme #copyPromptBtn:hover {
+            background-color: #d1d5db; /* hover:bg-gray-300 */
+        }
+
+        /* Theme toggle button */
+        #themeToggle {
+            background-color: #4a5568; /* bg-gray-700 */
+            color: #e2e8f0; /* text-gray-200 */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        #themeToggle:hover {
+            background-color: #636b77; /* hover:bg-gray-600 */
+        }
+        body.light-theme #themeToggle {
+            background-color: #e5e7eb; /* bg-gray-200 */
+            color: #1f2937; /* text-gray-800 */
+        }
+        body.light-theme #themeToggle:hover {
+            background-color: #d1d5db; /* hover:bg-gray-300 */
+        }
+
+        /* Modal content light theme */
+        body.light-theme .modal-content {
+            background-color: #fefefe;
+            color: #1f2937;
+        }
+        body.light-theme .close-button {
+            color: #aaa;
+        }
+        body.light-theme .close-button:hover, body.light-theme .close-button:focus {
+            color: black;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main Application Container -->
+    <div class="app-container p-8 rounded-xl shadow-lg w-full max-w-3xl border relative">
+        <!-- Theme Toggle Button -->
+        <button id="themeToggle" class="absolute top-4 right-4 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500">
+            <!-- Sun icon (default for dark theme) -->
+            <svg id="sunIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h1M3 12h1m15.325-4.675l-.707-.707M4.675 19.325l-.707-.707m12.728 0l-.707.707M6.343 6.343l-.707-.707"></path>
+            </svg>
+            <!-- Moon icon (for light theme) -->
+            <svg id="moonIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+        </button>
+
+        <h1 class="text-4xl font-extrabold mb-6 text-center">
+            ✨ AI Image Prompt Generator
+        </h1>
+        <p class="text-center mb-8">
+            Craft detailed text prompts for AI image generation (e.g., MidJourney, Stable Diffusion, DALL·E).
+        </p>
+
+        <div class="space-y-6">
+            <!-- Section 1: Customize Your Image -->
+            <h2 class="text-2xl font-semibold border-b pb-3 mb-4">1. Customize Your Image</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Aspect Ratio -->
+                <div>
+                    <label for="aspectRatio" class="block text-sm font-medium mb-1">Aspect Ratio</label>
+                    <select id="aspectRatio" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="1:1">1:1 (Square)</option>
+                        <option value="16:9">16:9 (Widescreen)</option>
+                        <option value="4:3">4:3 (Standard)</option>
+                        <option value="9:16" selected>9:16 (Vertical)</option> <!-- Default changed here -->
+                        <option value="21:9">21:9 (Cinematic)</option>
+                        <option value="3:2">3:2</option>
+                    </select>
+                </div>
+
+                <!-- Art Style -->
+                <div>
+                    <label for="artStyle" class="block text-sm font-medium mb-1">Art Style</label>
+                    <select id="artStyle" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="realistic">Realistic</option>
+                        <option value="cartoon">Cartoon</option>
+                        <option value="cyberpunk">Cyberpunk</option>
+                        <option value="watercolor">Watercolor</option>
+                        <option value="pixel art">Pixel Art</option>
+                        <option value="oil painting">Oil Painting</option>
+                        <option value="impressionistic">Impressionistic</option>
+                        <option value="anime">Anime</option>
+                        <option value="fantasy art">Fantasy Art</option>
+                        <option value="sci-fi">Sci-Fi</option>
+                    </select>
+                </div>
+
+                <!-- Lighting -->
+                <div>
+                    <label for="lighting" class="block text-sm font-medium mb-1">Lighting</label>
+                    <select id="lighting" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="soft">Soft</option>
+                        <option value="dramatic">Dramatic</option>
+                        <option value="neon">Neon</option>
+                        <option value="sunset">Sunset</option>
+                        <option value="studio lighting">Studio Lighting</option>
+                        <option value="cinematic">Cinematic</option>
+                        <option value="volumetric">Volumetric</option>
+                        <option value="golden hour">Golden Hour</option>
+                        <option value="ambient">Ambient</option>
+                    </select>
+                </div>
+
+                <!-- Background Style -->
+                <div>
+                    <label for="backgroundStyle" class="block text-sm font-medium mb-1">Background Style</label>
+                    <select id="backgroundStyle" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="blurred">Blurred</option>
+                        <option value="detailed">Detailed</option>
+                        <option value="abstract">Abstract</option>
+                        <option value="cityscape">Cityscape</option>
+                        <option value="nature">Nature</option>
+                        <option value="solid color">Solid Color</option>
+                        <option value="gradient">Gradient</option>
+                        <option value="geometric">Geometric</option>
+                        <option value="industrial">Industrial</option>
+                    </select>
+                </div>
+
+                <!-- Color Palette -->
+                <div>
+                    <label for="colorPalette" class="block text-sm font-medium mb-1">Color Palette</label>
+                    <select id="colorPalette" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="vibrant">Vibrant</option>
+                        <option value="monochrome">Monochrome</option>
+                        <option value="pastel">Pastel</option>
+                        <option value="dark & moody">Dark & Moody</option>
+                        <option value="earthy tones">Earthy Tones</option>
+                        <option value="warm tones">Warm Tones</option>
+                        <option value="cool tones">Cool Tones</option>
+                        <option value="high contrast">High Contrast</option>
+                    </select>
+                </div>
+
+                <!-- Subject Focus -->
+                <div>
+                    <label for="subjectFocus" class="block text-sm font-medium mb-1">Subject Focus</label>
+                    <select id="subjectFocus" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="portrait">Portrait</option>
+                        <option value="full body">Full Body</option>
+                        <option value="close-up">Close-up</option>
+                        <option value="wide shot">Wide Shot</option>
+                        <option value="medium shot">Medium Shot</option>
+                        <option value="macro">Macro</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 2: Describe Your Subject -->
+            <h2 class="text-2xl font-semibold border-b pb-3 mb-4 mt-8">2. Describe Your Subject</h2>
+            <div>
+                <label for="mainSubjectDetails" class="block text-sm font-medium mb-1">Main subject, composition, and additional details:</label>
+                <textarea id="mainSubjectDetails" rows="4" class="mt-1 block w-full p-3 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" placeholder="e.g., 'A futuristic robot standing in a neon-lit alley'"></textarea>
+            </div>
+
+            <!-- Generate Prompt Button -->
+            <div class="flex justify-center mt-8">
+                <button id="generatePromptBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                    Generate Prompt
+                </button>
+            </div>
+
+            <!-- Output Display -->
+            <h2 class="text-2xl font-semibold border-b pb-3 mb-4 mt-8">Your Generated Prompt</h2>
+            <div class="relative">
+                <textarea id="outputPrompt" rows="6" readonly class="mt-1 block w-full p-3 border rounded-md shadow-sm bg-gray-50 font-mono resize-none cursor-text"></textarea>
+                <button id="copyPromptBtn" class="absolute top-3 right-3 bg-gray-200 hover:bg-gray-300 font-semibold py-1.5 px-3 rounded-md text-sm transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75">
+                    Copy
+                </button>
+            </div>
+        </div>
+
+        <p class="text-center text-gray-500 text-sm mt-10">💡 Tip: Experiment with different combinations to get unique results!</p>
+    </div>
+
+    <!-- Custom Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg"></p>
+            <button id="modalOkButton" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to all necessary DOM elements
+        const aspectRatioSelect = document.getElementById('aspectRatio');
+        const artStyleSelect = document.getElementById('artStyle');
+        const lightingSelect = document.getElementById('lighting');
+        const backgroundStyleSelect = document.getElementById('backgroundStyle');
+        const colorPaletteSelect = document.getElementById('colorPalette');
+        const subjectFocusSelect = document.getElementById('subjectFocus');
+        const mainSubjectDetailsTextarea = document.getElementById('mainSubjectDetails');
+        const generatePromptBtn = document.getElementById('generatePromptBtn');
+        const outputPromptTextarea = document.getElementById('outputPrompt');
+        const copyPromptBtn = document.getElementById('copyPromptBtn');
+
+        // Modal elements
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalOkButton = document.getElementById('modalOkButton');
+        const closeButton = document.querySelector('.close-button');
+
+        // Theme toggle elements
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        const body = document.body;
+
+        /**
+         * Displays a custom modal message instead of alert().
+         * @param {string} message - The message to display.
+         */
+        function showMessage(message) {
+            modalMessage.textContent = message;
+            messageModal.style.display = 'flex'; // Use flex to center
+        }
+
+        // Close modal listeners
+        closeButton.onclick = function() {
+            messageModal.style.display = 'none';
+        }
+        modalOkButton.onclick = function() {
+            messageModal.style.display = 'none';
+        }
+        window.onclick = function(event) {
+            if (event.target == messageModal) {
+                messageModal.style.display = 'none';
+            }
+        }
+
+        // Function to set the theme
+        function setTheme(theme) {
+            if (theme === 'light') {
+                body.classList.add('light-theme');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.remove('light-theme');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Initialize theme on load
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else {
+            // Default to dark theme if no preference is saved
+            setTheme('dark');
+        }
+
+        // Event listener for theme toggle button
+        themeToggleBtn.addEventListener('click', () => {
+            if (body.classList.contains('light-theme')) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        });
+
+        // Event listener for the "Generate Prompt" button
+        generatePromptBtn.addEventListener('click', () => {
+            const mainSubject = mainSubjectDetailsTextarea.value.trim();
+
+            // Validate if the main subject is provided
+            if (!mainSubject) {
+                showMessage("Please describe your main subject to generate a prompt.");
+                return; // Stop execution if validation fails
+            }
+
+            // Get selected values from dropdowns
+            const aspectRatio = aspectRatioSelect.value;
+            const artStyle = artStyleSelect.value;
+            const lighting = lightingSelect.value;
+            const backgroundStyle = backgroundStyleSelect.value;
+            const colorPalette = colorPaletteSelect.value;
+            const subjectFocus = subjectFocusSelect.value;
+
+            // Construct the prompt string
+            const promptParts = [
+                mainSubject,
+                `${artStyle} style`,
+                `${lighting} lighting`,
+                `${backgroundStyle} background`,
+                `${colorPalette} color palette`,
+                `${subjectFocus}`,
+                `${aspectRatio} aspect ratio`
+            ];
+
+            // Join all parts with a comma and add a period at the end
+            const finalPrompt = promptParts.join(', ') + '.';
+
+            // Display the generated prompt in the output textarea
+            outputPromptTextarea.value = finalPrompt;
+        });
+
+        // Event listener for the "Copy Prompt" button
+        copyPromptBtn.addEventListener('click', () => {
+            // Select the text in the output textarea
+            outputPromptTextarea.select();
+            outputPromptTextarea.setSelectionRange(0, 99999); // For mobile devices
+
+            try {
+                // Copy the selected text to the clipboard
+                document.execCommand('copy');
+                showMessage("Prompt copied to clipboard!");
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                showMessage("Failed to copy prompt. Please copy manually.");
+            }
+        });
+    </script>
+</body>
+</html>
